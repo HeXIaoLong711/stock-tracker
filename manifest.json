@@ -2,7 +2,7 @@
   "name": "赛道龙头 - A股主流赛道分析",
   "short_name": "赛道龙头",
   "description": "实时分析A股主流赛道，识别龙头股票，解读上涨逻辑",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#F2F2F7",
   "theme_color": "#007AFF",

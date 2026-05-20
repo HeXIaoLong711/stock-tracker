@@ -1,9 +1,9 @@
 const CACHE_NAME = 'stock-tracker-v1';
 const ASSETS_TO_CACHE = [
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/manifest.json'
+  './index.html',
+  './style.css',
+  './app.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
