@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="赛道龙头">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23007AFF' width='100' height='100' rx='20'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='white'>📈</text></svg>">
+  <title>赛道龙头 - A股主流赛道分析</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Navigation Bar -->
+    <div class="nav-bar">
+      <h1 id="nav-title">赛道龙头</h1>
+      <span class="update-time" id="update-time"></span>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content">
+      <!-- Tab: 赛道 -->
+      <div id="tab-track" class="tab-panel active">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">正在获取行情数据...</div>
+        </div>
+      </div>
+
+      <!-- Tab: 龙头 -->
+      <div id="tab-leader" class="tab-panel">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">正在分析龙头个股...</div>
+        </div>
+      </div>
+
+      <!-- Tab: 行情 -->
+      <div id="tab-market" class="tab-panel">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">正在加载行情概览...</div>
+        </div>
+      </div>
+
+      <!-- Tab: 资讯 -->
+      <div id="tab-news" class="tab-panel">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">正在获取行业资讯...</div>
+        </div>
+      </div>
+
+      <!-- Tab: 关于 -->
+      <div id="tab-about" class="tab-panel">
+        <div class="about-content">
+          <div class="logo">
+            <div class="icon">📈</div>
+            <h2>赛道龙头</h2>
+            <p>A股主流赛道实时分析</p>
+          </div>
+
+          <div class="about-section">
+            <h3>🎯 功能介绍</h3>
+            <ul>
+              <li><strong>赛道热度排行</strong> — 实时分析12大赛道涨跌表现，自动排名</li>
+              <li><strong>龙头股识别</strong> — 基于涨幅、资金、市值等多维度锁定板块龙头</li>
+              <li><strong>上涨逻辑解读</strong> — 智能生成每只龙头股的领涨原因分析</li>
+              <li><strong>行业热点资讯</strong> — 汇总各赛道热点新闻，分析对行业的利好/利空影响</li>
+              <li><strong>热力图</strong> — 一目了然查看各赛道强弱分布</li>
+            </ul>
+          </div>
+
+          <div class="about-section">
+            <h3>📊 覆盖赛道</h3>
+            <ul>
+              <li>🤖 人工智能 / 💎 半导体 / ⚡ 新能源</li>
+              <li>🌿 绿电运营商 / 🖥️ 算力算电协同</li>
+              <li>🦾 机器人 / 🚗 智能驾驶</li>
+              <li>✈️ 军工 / 💊 医药创新</li>
+              <li>📊 数据要素 / 🛒 消费复苏 / 🏦 金融</li>
+            </ul>
+          </div>
+
+          <div class="about-section">
+            <h3>📱 添加到主屏幕</h3>
+            <ol>
+              <li>在 Safari 中打开本页面</li>
+              <li>点击底部「分享」按钮 📤</li>
+              <li>选择「添加到主屏幕」</li>
+              <li>点击「添加」即可</li>
+            </ol>
+            <p style="margin-top:8px;font-size:12px;color:var(--text2)">添加后可像原生 App 一样使用，全屏无浏览器栏</p>
+          </div>
+
+          <div class="about-section">
+            <h3>ℹ️ 关于数据</h3>
+            <p>行情数据来源于腾讯财经，实时更新。交易时间内每 30 秒自动刷新。</p>
+            <p style="margin-top:4px;font-size:11px;color:var(--text3)">⚠️ 数据仅供参考，不构成投资建议</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item active" data-tab="track">
+        <span class="icon">🔥</span>
+        <span>赛道</span>
+      </div>
+      <div class="tab-item" data-tab="leader">
+        <span class="icon">🏆</span>
+        <span>龙头</span>
+      </div>
+      <div class="tab-item" data-tab="market">
+        <span class="icon">📊</span>
+        <span>行情</span>
+      </div>
+      <div class="tab-item" data-tab="news">
+        <span class="icon">📰</span>
+        <span>资讯</span>
+      </div>
+      <div class="tab-item" data-tab="about">
+        <span class="icon">ℹ️</span>
+        <span>关于</span>
+      </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h2 id="modal-sector-name">赛道详情</h2>
+          <button class="modal-close" id="modal-close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="text-align:center;margin-bottom:12px">
+            <div id="modal-sector-avg" style="font-size:28px;font-weight:800">+0.00%</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">板块均涨幅</div>
+          </div>
+          <div id="modal-keywords" style="margin-bottom:12px"></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">成分股排行</div>
+          <div id="modal-stocks"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- News Detail Modal -->
+    <div class="modal-overlay" id="news-modal-overlay">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h2 id="news-modal-title" style="font-size:15px;flex:1;padding-right:8px;line-height:1.4">新闻详情</h2>
+          <button class="modal-close" id="news-modal-close">✕</button>
+        </div>
+        <div class="modal-body" id="news-modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
