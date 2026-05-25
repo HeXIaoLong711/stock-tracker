@@ -1,5 +1,5 @@
 /* ============================================================
-   赛道龙头 - A股主流赛道分析  v2.0 (新增资讯模块)
+   赛道龙头 - A股主流赛道分析  v2.1 (升级资讯模块)
    ============================================================ */
 
 // ===== Sector Definitions =====
@@ -9,84 +9,84 @@ const SECTORS = [
     stocks: ['sz002230','sh688256','sz000977','sz300418','sh603019'],
     stockNames: ['科大讯飞','寒武纪','浪潮信息','昆仑万维','中科曙光'],
     keywords: ['大模型','AIGC','算力需求','AI应用落地','国产AI芯片'],
-    newsKeywords: ['人工智能','AI','大模型','GPT','ChatGPT','AIGC','深度学习','机器学习','算力','智算','文心','通义','kimi','豆包','deepseek','claude','gemini','openai','nvidia','英伟达']
+    newsKeywords: ['人工智能','AI','大模型','GPT','ChatGPT','AIGC','深度学习','机器学习','算力','智算','文心','通义','kimi','豆包','deepseek','claude','gemini','openai','nvidia','英伟达','华为AI','昇腾','鸿蒙AI','盘古','华为大模型','智能体','Agent','多模态','具身智能','AI芯片','国产AI']
   },
   {
     id: 'semiconductor', name: '半导体', icon: '💎', tagClass: 'semi',
     stocks: ['sh688981','sz002371','sh603501','sz300782','sz300661'],
     stockNames: ['中芯国际','北方华创','韦尔股份','卓胜微','圣邦股份'],
     keywords: ['国产替代','设备自主化','先进封装','芯片设计','产能扩张'],
-    newsKeywords: ['半导体','芯片','晶圆','光刻','封装','中芯','华创','EDA','GPU','英伟达','台积电','ASML','存储','NAND','DRAM','刻蚀','薄膜','IC设计','国产替代','先进制程']
+    newsKeywords: ['半导体','芯片','晶圆','光刻','封装','中芯','华创','EDA','GPU','英伟达','台积电','ASML','存储','NAND','DRAM','刻蚀','薄膜','IC设计','国产替代','先进制程','华为','麒麟','昇腾','鸿蒙','海思','华为芯片','国产芯片','麒麟芯片','华为处理器','鲲鹏','巴龙','天罡','射频芯片','模拟芯片','功率半导体','SiC','GaN','碳化硅','氮化镓','RISC-V','SoC']
   },
   {
     id: 'newenergy', name: '新能源', icon: '⚡', tagClass: 'newe',
     stocks: ['sz300750','sh601012','sh600438','sz002459','sz300274'],
     stockNames: ['宁德时代','隆基绿能','通威股份','晶澳科技','阳光电源'],
     keywords: ['储能爆发','光伏装机','电池技术','出海加速','成本下降'],
-    newsKeywords: ['新能源','光伏','储能','电池','宁德时代','锂电','风电','硅料','硅片','组件','逆变器','充电桩','氢能','碳中和','碳中和','光伏装机','电池技术']
+    newsKeywords: ['新能源','光伏','储能','电池','宁德时代','锂电','风电','硅料','硅片','组件','逆变器','充电桩','氢能','碳中和','光伏装机','电池技术','固态电池','钠电池','钙钛矿','BC电池','TOPCon','HJT','异质结','新能源车','动力电池','回收','梯次利用']
   },
   {
     id: 'greenelec', name: '绿电运营商', icon: '🌿', tagClass: 'green',
     stocks: ['sh600905','sh00916','sh600833','sz000537','sh600025'],
     stockNames: ['三峡能源','龙源电力','中绿电','金开新能','华能水电'],
     keywords: ['绿电交易','装机增长','电价市场化','碳交易','算电协同'],
-    newsKeywords: ['绿电','电力','新能源发电','风电','光伏电站','碳交易','碳配额','绿证','三峡能源','龙源电力','电价','电力市场化','算电协同','数据中心']
+    newsKeywords: ['绿电','电力','新能源发电','风电','光伏电站','碳交易','碳配额','绿证','三峡能源','龙源电力','电价','电力市场化','算电协同','数据中心','电力改革','新型电力','虚拟电厂','源网荷储','火电转型','抽水蓄能','核电','水电']
   },
   {
     id: 'compute_power', name: '算力/算电协同', icon: '🖥️', tagClass: 'comp',
     stocks: ['sz300474','sh603019','sz002230','sz300418','sz000977'],
     stockNames: ['景嘉微','中科曙光','科大讯飞','昆仑万维','浪潮信息'],
     keywords: ['智算中心','算力基建','GPU国产化','液冷散热','算电协同'],
-    newsKeywords: ['算力','智算','数据中心','GPU','液冷','服务器','浪潮','曙光','算电协同','IDC','云计算','基础设施','东数西算','算力网络']
+    newsKeywords: ['算力','智算','数据中心','GPU','液冷','服务器','浪潮','曙光','算电协同','IDC','云计算','基础设施','东数西算','算力网络','华为算力','昇腾','华为服务器','国产GPU','景嘉微','国产操作系统','信创','国产化','C86','ARM服务器']
   },
   {
     id: 'robot', name: '机器人', icon: '🦾', tagClass: 'robo',
     stocks: ['sz300124','sh688017','sz002747','sz300024','sz002097'],
     stockNames: ['汇川技术','绿的谐波','埃斯顿','机器人','山河智能'],
     keywords: ['人形机器人','减速器','伺服系统','工业自动化','具身智能'],
-    newsKeywords: ['机器人','人形机器人','工业机器人','减速器','伺服','自动化','具身智能','特斯拉机器人','优必选','傅利叶','智元','灵巧手','协作机器人','优傲']
+    newsKeywords: ['机器人','人形机器人','工业机器人','减速器','伺服','自动化','具身智能','特斯拉机器人','优必选','傅利叶','智元','灵巧手','协作机器人','优傲','华为机器人','乐聚','宇树','小鹏机器人','小米机器人','手术机器人','无人机','低空经济']
   },
   {
     id: 'auto_smart', name: '智能驾驶', icon: '🚗', tagClass: 'auto',
     stocks: ['sz002594','sh601127','sz002920','sz002405','sz300496'],
     stockNames: ['比亚迪','赛力斯','德赛西威','四维图新','中科创达'],
     keywords: ['L3落地','NOA渗透','智驾芯片','车载软件','华为生态'],
-    newsKeywords: ['智能驾驶','自动驾驶','无人驾驶','L3','L4','NOA','特斯拉FSD','华为智驾','小鹏','蔚来','理想','比亚迪','激光雷达','车载芯片','车路协同','智能座舱']
+    newsKeywords: ['智能驾驶','自动驾驶','无人驾驶','L3','L4','NOA','特斯拉FSD','华为智驾','小鹏','蔚来','理想','比亚迪','激光雷达','车载芯片','车路协同','智能座舱','问界','智界','享界','鸿蒙智行','华为汽车','赛力斯','车载OS','车机','OTA','线控','域控制器','飞凡','极氪','小米汽车']
   },
   {
     id: 'military', name: '军工', icon: '✈️', tagClass: 'mili',
     stocks: ['sh600760','sh600893','sz002179','sh600862','sz300034'],
     stockNames: ['中航沈飞','航发动力','中航光电','中航高科','钢研高纳'],
     keywords: ['装备采购','国防预算','国产替代','军工信息化','订单放量'],
-    newsKeywords: ['军工','国防','航发','战斗机','航母','导弹','卫星','军费','装备','军工信息化','无人机','中航','沈飞','成飞','武器','地缘']
+    newsKeywords: ['军工','国防','航发','战斗机','航母','导弹','卫星','军费','装备','军工信息化','无人机','中航','沈飞','成飞','武器','地缘','低空经济','商业航天','火箭','星座','北斗','电子对抗','雷达','相控阵','六代机','轰20','055','两栖']
   },
   {
     id: 'pharma', name: '医药创新', icon: '💊', tagClass: 'phar',
     stocks: ['sh603259','sh600276','sz300760','sz300122','sh688180'],
     stockNames: ['药明康德','恒瑞医药','迈瑞医疗','智飞生物','君实生物'],
     keywords: ['创新药出海','ADC药物','GLP-1','医保谈判','国产替代'],
-    newsKeywords: ['医药','创新药','GLP-1','ADC','PD-1','医保','药明','恒瑞','迈瑞','疫苗','生物药','CRO','CDMO','仿制药','集采','FDA','临床','审批']
+    newsKeywords: ['医药','创新药','GLP-1','ADC','PD-1','医保','药明','恒瑞','迈瑞','疫苗','生物药','CRO','CDMO','仿制药','集采','FDA','临床','审批','减肥药','司美格鲁肽','替尔泊肽','核酸药物','基因治疗','细胞疗法','CAR-T','AI制药','中医药','药店']
   },
   {
     id: 'data_element', name: '数据要素', icon: '📊', tagClass: 'data',
     stocks: ['sh600756','sz002368','sh603881','sz300212','sz000977'],
     stockNames: ['浪潮软件','太极股份','数据港','易华录','浪潮信息'],
     keywords: ['数据资产入表','数据交易','政务数据','算力支撑','数据安全'],
-    newsKeywords: ['数据要素','数据交易','数据资产','数字经济','大数据','数据安全','隐私计算','政务数据','数据入表','数据确权','数据流通','数据局']
+    newsKeywords: ['数据要素','数据交易','数据资产','数字经济','大数据','数据安全','隐私计算','政务数据','数据入表','数据确权','数据流通','数据局','信创','国产软件','华为云','政务云','数字政府','智慧城市','数据中心','AI应用','国产化替代']
   },
   {
     id: 'consume', name: '消费复苏', icon: '🛒', tagClass: 'cons',
     stocks: ['sh600519','sz000858','sz000333','sh600887','sz002714'],
     stockNames: ['贵州茅台','五粮液','美的集团','伊利股份','牧原股份'],
     keywords: ['消费回暖','高端化','渠道改革','品牌溢价','提价预期'],
-    newsKeywords: ['消费','白酒','茅台','五粮液','家电','食品','零售','免税','旅游','餐饮','消费复苏','内需','消费券','以旧换新','新能源车消费']
+    newsKeywords: ['消费','白酒','茅台','五粮液','家电','食品','零售','免税','旅游','餐饮','消费复苏','内需','消费券','以旧换新','新能源车消费','直播电商','跨境电商','预制菜','乳制品','猪周期','家电补贴','消费税','医美','化妆品','宠物经济']
   },
   {
     id: 'finance', name: '金融', icon: '🏦', tagClass: 'fina',
     stocks: ['sh600036','sh601318','sh600030','sz000776','sh601166'],
     stockNames: ['招商银行','中国平安','中信证券','广发证券','北京银行'],
     keywords: ['利率政策','财富管理','投行活跃','估值修复','分红稳健'],
-    newsKeywords: ['金融','银行','证券','保险','利率','LPR','降息','降准','央行','货币','信贷','券商','IPO','基金','理财','融资','北交所','注册制']
+    newsKeywords: ['金融','银行','证券','保险','利率','LPR','降息','降准','央行','货币','信贷','券商','IPO','基金','理财','融资','北交所','注册制','化债','地方债','国债','货币政策','金融监管','并购重组','量化','融资融券','ETF','红利']
   }
 ];
 
@@ -543,47 +543,67 @@ function closeModal() {
 
 // ===== News Module =====
 
-// Fetch news from East Money (supports JSONP)
+// Fetch news from East Money (supports JSONP) - multiple columns for broader coverage
 function fetchNews() {
-  return new Promise((resolve) => {
-    const cbName = 'em_news_cb_' + Date.now();
-    const timeout = setTimeout(() => {
-      delete window[cbName];
-      resolve([]);
-    }, 8000);
+  // Multiple news columns: 250=要闻, 352=科技, 354=7x24, 462=半导体, 463=新能源, 464=医药, 465=消费, 466=金融, 467=军工
+  const COLUMNS = [250, 352, 354, 462, 463, 464, 465, 466, 467];
 
-    window[cbName] = function(data) {
-      clearTimeout(timeout);
-      delete window[cbName];
-      const newsList = [];
-      if (data && data.data && data.data.list) {
-        data.data.list.forEach(item => {
-          newsList.push({
-            title: item.title || '',
-            content: item.digest || item.content || '',
-            source: item.source || '东方财富',
-            time: item.ctime || item.showtime || '',
-            url: item.url || '',
-            sectorIds: [],
-            impact: null,
-            impactSummary: '',
-            impactDetails: [],
-            relatedStocks: []
+  const fetchColumn = (col) => {
+    return new Promise((resolve) => {
+      const cbName = 'em_news_cb_' + col + '_' + Date.now();
+      const timeout = setTimeout(() => {
+        delete window[cbName];
+        resolve([]);
+      }, 8000);
+
+      window[cbName] = function(data) {
+        clearTimeout(timeout);
+        delete window[cbName];
+        const newsList = [];
+        if (data && data.data && data.data.list) {
+          data.data.list.forEach(item => {
+            newsList.push({
+              title: item.title || '',
+              content: item.digest || item.content || '',
+              source: item.source || '东方财富',
+              time: item.ctime || item.showtime || '',
+              url: item.url || '',
+              sectorIds: [],
+              impact: null,
+              impactSummary: '',
+              impactDetails: [],
+              relatedStocks: []
+            });
           });
-        });
-      }
-      resolve(newsList);
-    };
+        }
+        resolve(newsList);
+      };
 
-    const script = document.createElement('script');
-    script.src = 'https://np-listapi.eastmoney.com/comm/web/getNewsByColumn?client=web&biz=web_news_col&column=250&order=1&needInteractData=0&page_index=1&page_size=50&req_trace=' + Date.now() + '&callback=' + cbName;
-    script.onerror = () => {
-      clearTimeout(timeout);
-      delete window[cbName];
-      resolve([]);
-    };
-    document.head.appendChild(script);
-    script.onload = () => script.remove();
+      const script = document.createElement('script');
+      script.src = 'https://np-listapi.eastmoney.com/comm/web/getNewsByColumn?client=web&biz=web_news_col&column=' + col + '&order=1&needInteractData=0&page_index=1&page_size=20&req_trace=' + Date.now() + '&callback=' + cbName;
+      script.onerror = () => {
+        clearTimeout(timeout);
+        delete window[cbName];
+        resolve([]);
+      };
+      document.head.appendChild(script);
+      script.onload = () => script.remove();
+    });
+  };
+
+  return Promise.all(COLUMNS.map(col => fetchColumn(col))).then(results => {
+    // Merge & deduplicate by title
+    const allNews = [];
+    const seenTitles = new Set();
+    results.forEach(list => {
+      list.forEach(item => {
+        if (item.title && !seenTitles.has(item.title)) {
+          seenTitles.add(item.title);
+          allNews.push(item);
+        }
+      });
+    });
+    return allNews;
   });
 }
 
