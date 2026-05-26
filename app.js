@@ -1,5 +1,5 @@
 /* ============================================================
-   赛道龙头 - A股主流赛道分析  v2.1 (升级资讯模块)
+   赛道龙头 - A股主流赛道分析  v2.2 (新增每日技术政策日报)
    ============================================================ */
 
 // ===== Sector Definitions =====
@@ -99,6 +99,16 @@ const state = {
   indexData: {},      // major indices
   newsData: [],       // classified news items
   newsFilter: 'all',  // current news filter
+  dailyData: {        // daily report data
+    techNews: [],     // technology breakthrough news
+    policyNews: [],   // policy/regulation news
+    techPositive: [],
+    techNegative: [],
+    policyPositive: [],
+    policyNegative: [],
+    summary: ''
+  },
+  dailyFilter: 'all', // daily tab filter
   lastUpdate: null,
   loading: true,
   error: null
@@ -113,7 +123,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
   $('nav-title').textContent = {
-    track: '赛道龙头', leader: '龙头个股', news: '行业资讯', market: '行情概览', about: '关于'
+    track: '赛道龙头', leader: '龙头个股', news: '行业资讯', market: '行情概览', daily: '技术政策日报', about: '关于'
   }[tab];
 }
 
@@ -966,6 +976,7 @@ function showLoading() {
   $('tab-leader').innerHTML = `<div class="loading-container"><div class="spinner"></div><div class="loading-text">正在分析赛道龙头...</div></div>`;
   $('tab-news').innerHTML = `<div class="loading-container"><div class="spinner"></div><div class="loading-text">正在获取行业资讯...</div></div>`;
   $('tab-market').innerHTML = `<div class="loading-container"><div class="spinner"></div><div class="loading-text">正在加载行情...</div></div>`;
+  $('tab-daily').innerHTML = `<div class="loading-container"><div class="spinner"></div><div class="loading-text">正在汇总今日技术政策动态...</div></div>`;
 }
 
 function showError(msg) {
@@ -1047,6 +1058,9 @@ async function initApp() {
 
     state.newsData = processNews(rawNews);
 
+    // Process daily report from the same news data
+    processDailyReport(rawNews);
+
     $('tab-news').innerHTML = `
       <div id="news-filter-bar" class="news-filter-bar"></div>
       <div class="section-title">📰 行业热点资讯 <span style="font-weight:400;color:var(--text3)">${state.newsData.length}条</span></div>
@@ -1054,10 +1068,303 @@ async function initApp() {
     `;
     renderNewsTab();
 
+    // Render daily tab
+    renderDailyTab();
+
   } catch (e) {
     console.error(e);
     showError('数据加载失败，请检查网络后重试');
   }
+}
+
+// ===== Daily Report Module (技术/政策日报) =====
+
+// Technology keywords for identifying tech news
+const TECH_KEYWORDS = [
+  '突破','发布','推出','首发','量产','攻克','研制','研发','创新','迭代',
+  '升级','发布','上市','芯片','大模型','AI','算法','架构','专利','工艺',
+  '技术','制程','纳米','封装','GPU','CPU','NPU','算力','训练','推理',
+  '机器人','自动驾驶','固态电池','钙钛矿','超导','量子','核聚变','光刻',
+  'EDA','RISC-V','SiC','GaN','先进制程','5nm','3nm','2nm','CoWoS','HBM',
+  '昇腾','麒麟','鲲鹏','鸿蒙','盘古','天罡','巴龙','MaaS','Agent',
+  '具身智能','多模态','大语言模型','端侧AI','边缘计算','液冷','光电',
+  '钠电池','氢能','TOPCon','HJT','BC电池','异质结','钙钛矿',
+  '人形机器人','减速器','伺服','灵巧手','L3','L4','NOA','FSD',
+  '激光雷达','4D毫米波','域控制器','线控','OTA','智能座舱',
+  'CAR-T','ADC','GLP-1','PD-1','mRNA','基因编辑','AI制药',
+  '6G','卫星通信','星链','低轨卫星','商业航天','可回收火箭'
+];
+
+// Policy keywords for identifying policy/regulation news
+const POLICY_KEYWORDS = [
+  '政策','规划','意见','通知','方案','指引','条例','规定','办法','标准',
+  '国务院','发改委','工信部','商务部','财政部','央行','证监会','银保监',
+  '工信部','科技部','能源局','住建部','交通部','农业部','卫健委','数据局',
+  '补贴','扶持','鼓励','支持','促进','推动','加快','推进','落实','部署',
+  '限制','管制','收紧','监管','处罚','禁止','制裁','出口管制','实体清单',
+  '降准','降息','LPR','利率','MLF','逆回购','信贷','融资',
+  '减税','免税','优惠','以旧换新','消费券','专项债','国债','地方债',
+  '国产替代','自主可控','信创','数据要素','数据入表','数据确权',
+  '碳中和','碳交易','绿证','碳配额','双碳','ESG',
+  '医保','集采','创新药审批','注册制','IPO','北交所','退市',
+  '军费','国防预算','装备采购','军民融合',
+  '东数西算','智算中心','算电协同','新型电力','电力改革',
+  '低空经济','自动驾驶法规','数据安全法','个人信息保护',
+  '产业政策','五年规划','十四五','高质量发展','新质生产力'
+];
+
+// Positive signal keywords
+const DAILY_POSITIVE_KW = [
+  '突破','增长','超预期','加速','提升','扩张','利好','获批','放量','创新高',
+  '回暖','上行','落地','释放','爆发','景气','扶持','鼓励','补贴','订单',
+  '量产','出海','升级','翻倍','首次','里程碑','新突破','强劲','重大进展',
+  '大幅增长','超预期增长','快速发展','国产替代','自主可控','政策支持',
+  '减税','降准','降息','补贴','扶持','鼓励','促进','推动','加快',
+  '开放','放宽','试点','扩围','增量','注入','打通','批复','核准'
+];
+
+// Negative signal keywords
+const DAILY_NEGATIVE_KW = [
+  '下滑','下降','亏损','下跌','萎缩','收紧','限制','制裁','管控','风险',
+  '担忧','承压','过剩','降价','下调','放缓','减少','退坡','约束','出清',
+  '紧张','违约','暴雷','缩量','回落','不及预期','压力','冲击','负面',
+  '受限','受阻','困难','挑战','封禁','禁止','处罚','管制','制裁',
+  '出口管制','实体清单','黑名单','反倾销','加征关税','贸易壁垒',
+  '加息','缩表','紧缩','去杠杆','严监管','整改','叫停','暂缓'
+];
+
+// Classify news into tech/policy categories
+function classifyDailyNews(newsItem) {
+  const text = (newsItem.title + ' ' + newsItem.content).toLowerCase();
+  let techScore = 0, policyScore = 0;
+
+  TECH_KEYWORDS.forEach(k => { if (text.indexOf(k.toLowerCase()) >= 0) techScore++; });
+  POLICY_KEYWORDS.forEach(k => { if (text.indexOf(k.toLowerCase()) >= 0) policyScore++; });
+
+  let posScore = 0, negScore = 0;
+  DAILY_POSITIVE_KW.forEach(k => { if (text.indexOf(k) >= 0) posScore++; });
+  DAILY_NEGATIVE_KW.forEach(k => { if (text.indexOf(k) >= 0) negScore++; });
+
+  let impact = 'neutral';
+  if (posScore > negScore + 1) impact = 'positive';
+  else if (negScore > posScore + 1) impact = 'negative';
+  else if (posScore > negScore) impact = 'positive';
+  else if (negScore > posScore) impact = 'negative';
+
+  const isTech = techScore >= 2;
+  const isPolicy = policyScore >= 2;
+
+  return { isTech, isPolicy, techScore, policyScore, impact, posScore, negScore };
+}
+
+// Process daily report from all news
+function processDailyReport(rawNews) {
+  const techNews = [];
+  const policyNews = [];
+
+  rawNews.forEach(item => {
+    const cls = classifyDailyNews(item);
+    if (cls.isTech || cls.isPolicy) {
+      const dailyItem = {
+        ...item,
+        category: cls.isTech && cls.isPolicy ? 'both' : cls.isTech ? 'tech' : 'policy',
+        categoryLabel: cls.isTech && cls.isPolicy ? '技术+政策' : cls.isTech ? '技术突破' : '政策动态',
+        impact: cls.impact,
+        techScore: cls.techScore,
+        policyScore: cls.policyScore
+      };
+
+      if (cls.isTech) techNews.push(dailyItem);
+      if (cls.isPolicy) policyNews.push(dailyItem);
+    }
+  });
+
+  // Sort by impact (positive first) then by score
+  const sortFn = (a, b) => {
+    const order = { positive: 0, neutral: 1, negative: 2 };
+    const impactDiff = (order[a.impact] || 1) - (order[b.impact] || 1);
+    if (impactDiff !== 0) return impactDiff;
+    return (b.techScore + b.policyScore) - (a.techScore + a.policyScore);
+  };
+
+  techNews.sort(sortFn);
+  policyNews.sort(sortFn);
+
+  // Generate summary
+  const techPos = techNews.filter(n => n.impact === 'positive').length;
+  const techNeg = techNews.filter(n => n.impact === 'negative').length;
+  const policyPos = policyNews.filter(n => n.impact === 'positive').length;
+  const policyNeg = policyNews.filter(n => n.impact === 'negative').length;
+
+  let summary = '';
+  if (techPos + policyPos > techNeg + policyNeg) {
+    summary = `今日技术政策面偏多：${techPos}项技术利好、${policyPos}项政策利好，仅${techNeg + policyNeg}项利空`;
+  } else if (techNeg + policyNeg > techPos + policyPos) {
+    summary = `今日技术政策面偏空：${techNeg + policyNeg}项利空因素，需关注风险`;
+  } else {
+    summary = `今日技术政策面多空交织：${techPos + policyPos}项利好 vs ${techNeg + policyNeg}项利空`;
+  }
+
+  state.dailyData = {
+    techNews,
+    policyNews,
+    techPositive: techNews.filter(n => n.impact === 'positive'),
+    techNegative: techNews.filter(n => n.impact === 'negative'),
+    policyPositive: policyNews.filter(n => n.impact === 'positive'),
+    policyNegative: policyNews.filter(n => n.impact === 'negative'),
+    summary
+  };
+}
+
+// Render Daily Tab
+function renderDailyTab() {
+  const filter = state.dailyFilter;
+  let items = [];
+
+  if (filter === 'all') {
+    items = [...state.dailyData.techNews, ...state.dailyData.policyNews];
+    // Deduplicate by title
+    const seen = new Set();
+    items = items.filter(n => {
+      if (seen.has(n.title)) return false;
+      seen.add(n.title);
+      return true;
+    });
+  } else if (filter === 'tech') {
+    items = state.dailyData.techNews;
+  } else if (filter === 'policy') {
+    items = state.dailyData.policyNews;
+  } else if (filter === 'positive') {
+    items = [...state.dailyData.techPositive, ...state.dailyData.policyPositive];
+    const seen = new Set();
+    items = items.filter(n => { if (seen.has(n.title)) return false; seen.add(n.title); return true; });
+  } else if (filter === 'negative') {
+    items = [...state.dailyData.techNegative, ...state.dailyData.policyNegative];
+    const seen = new Set();
+    items = items.filter(n => { if (seen.has(n.title)) return false; seen.add(n.title); return true; });
+  }
+
+  // Sort
+  const order = { positive: 0, neutral: 1, negative: 2 };
+  items.sort((a, b) => (order[a.impact] || 1) - (order[b.impact] || 1));
+
+  const d = state.dailyData;
+
+  let html = `
+    <div class="daily-summary ${d.techPositive.length + d.policyPositive.length > d.techNegative.length + d.policyNegative.length ? 'bullish' : d.techNegative.length + d.policyNegative.length > d.techPositive.length + d.policyPositive.length ? 'bearish' : 'neutral'}">
+      <div class="daily-summary-title">📋 今日技术政策速览</div>
+      <div class="daily-summary-text">${d.summary}</div>
+      <div class="daily-summary-stats">
+        <div class="stat-item">
+          <span class="stat-icon">🔬</span>
+          <span class="stat-val">${d.techNews.length}</span>
+          <span class="stat-label">技术动态</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">📜</span>
+          <span class="stat-val">${d.policyNews.length}</span>
+          <span class="stat-label">政策动态</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🔴</span>
+          <span class="stat-val">${d.techPositive.length + d.policyPositive.length}</span>
+          <span class="stat-label">利好</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🟢</span>
+          <span class="stat-val">${d.techNegative.length + d.policyNegative.length}</span>
+          <span class="stat-label">利空</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="daily-filter-bar">
+      <div class="daily-filter-chip ${filter === 'all' ? 'active' : ''}" onclick="filterDaily('all')">全部</div>
+      <div class="daily-filter-chip ${filter === 'tech' ? 'active tech' : ''}" onclick="filterDaily('tech')">🔬 技术</div>
+      <div class="daily-filter-chip ${filter === 'policy' ? 'active policy' : ''}" onclick="filterDaily('policy')">📜 政策</div>
+      <div class="daily-filter-chip ${filter === 'positive' ? 'active pos' : ''}" onclick="filterDaily('positive')">🔴 利好</div>
+      <div class="daily-filter-chip ${filter === 'negative' ? 'active neg' : ''}" onclick="filterDaily('negative')">🟢 利空</div>
+    </div>
+  `;
+
+  if (items.length === 0) {
+    html += `
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <div class="text">暂无相关技术政策资讯</div>
+      </div>
+    `;
+  } else {
+    items.forEach((n, i) => {
+      const sector = SECTORS.find(s => s.id === n.sectorIds[0]);
+      const sectorName = sector ? sector.name : '综合';
+      const impactLabel = n.impact === 'positive' ? '🔴 利好' : n.impact === 'negative' ? '🟢 利空' : '⚪ 中性';
+      const catIcon = n.category === 'tech' ? '🔬' : n.category === 'policy' ? '📜' : '🔬📜';
+
+      html += `
+        <div class="daily-card fade-in ${n.impact}" style="animation-delay:${i * 0.04}s" onclick="showDailyDetail(${state.newsData.indexOf(n) >= 0 ? state.newsData.indexOf(n) : -1}, '${n.category}', ${i})">
+          <div class="daily-card-meta">
+            <span class="daily-cat-tag ${n.category}">${catIcon} ${n.categoryLabel}</span>
+            <span class="daily-sector-tag">${sectorName}</span>
+            <span class="daily-time">${n.source} · ${n.time}</span>
+          </div>
+          <div class="daily-card-title">${n.title}</div>
+          ${n.impactSummary ? `<div class="daily-impact-row"><span class="impact-badge ${n.impact}">${impactLabel}</span><span class="daily-impact-text">${n.impactSummary}</span></div>` : ''}
+        </div>
+      `;
+    });
+  }
+
+  $('tab-daily').innerHTML = html;
+}
+
+function filterDaily(filter) {
+  state.dailyFilter = filter;
+  renderDailyTab();
+}
+
+function showDailyDetail(newsIndex, category, dailyIndex) {
+  let n;
+  if (newsIndex >= 0) {
+    n = state.newsData[newsIndex];
+  }
+  if (!n) {
+    // Fallback to daily data
+    const list = category === 'tech' ? state.dailyData.techNews : state.dailyData.policyNews;
+    n = list[dailyIndex];
+  }
+  if (!n) return;
+
+  const sector = SECTORS.find(s => s.id === n.sectorIds[0]);
+  const sectorName = sector ? sector.name : '综合';
+  const catIcon = n.category === 'tech' ? '🔬' : n.category === 'policy' ? '📜' : '🔬📜';
+  const catLabel = n.categoryLabel || '综合';
+  const impactLabel = n.impact === 'positive' ? '🔴 利好影响' : n.impact === 'negative' ? '🟢 利空影响' : '⚪ 中性影响';
+
+  $('news-modal-title').textContent = n.title;
+  $('news-modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="daily-cat-tag ${n.category || 'tech'}" style="font-size:12px;padding:2px 8px;border-radius:4px;font-weight:600">${catIcon} ${catLabel}</span>
+      <span class="sector-tag" style="font-size:12px;padding:2px 8px;border-radius:4px;background:rgba(0,122,255,.08);color:var(--primary);font-weight:600">${sectorName}</span>
+      <span style="font-size:12px;color:var(--text2)">${n.source} · ${n.time}</span>
+    </div>
+    ${n.content ? `<div style="font-size:14px;line-height:1.7;color:var(--text1);margin-bottom:16px">${n.content}</div>` : ''}
+    <div class="impact-section">
+      <div class="impact-title">${impactLabel}</div>
+      <div class="impact-detail">${n.impactSummary || '影响分析中'}</div>
+      ${n.impactDetails && n.impactDetails.length > 0 ? `
+        <ul style="margin-top:8px;padding-left:16px">
+          ${n.impactDetails.map(d => `<li>${d}</li>`).join('')}
+        </ul>
+      ` : ''}
+      ${n.relatedStocks ? `
+        <div class="related-stocks">
+          <strong>相关标的：</strong>${n.relatedStocks}
+        </div>
+      ` : ''}
+    </div>
+  `;
+  $('news-modal-overlay').classList.add('show');
 }
 
 // ===== PWA Registration =====
