@@ -9,14 +9,14 @@ const SECTORS = [
     stocks: ['sz002230','sh688256','sz000977','sz300418','sh603019'],
     stockNames: ['科大讯飞','寒武纪','浪潮信息','昆仑万维','中科曙光'],
     keywords: ['大模型','AIGC','算力需求','AI应用落地','国产AI芯片'],
-    newsKeywords: ['人工智能','AI','大模型','GPT','ChatGPT','AIGC','深度学习','机器学习','算力','智算','文心','通义','kimi','豆包','deepseek','claude','gemini','openai','nvidia','英伟达','华为AI','昇腾','鸿蒙AI','盘古','华为大模型','智能体','Agent','多模态','具身智能','AI芯片','国产AI']
+    newsKeywords: ['人工智能','AI','大模型','GPT','ChatGPT','AIGC','深度学习','机器学习','算力','智算','文心','通义','kimi','豆包','deepseek','claude','gemini','openai','nvidia','英伟达','华为AI','昇腾','鸿蒙AI','盘古','华为大模型','智能体','Agent','多模态','具身智能','AI芯片','国产AI','韬定律','逻辑折叠','超节点','CloudMatrix']
   },
   {
     id: 'semiconductor', name: '半导体', icon: '💎', tagClass: 'semi',
     stocks: ['sh688981','sz002371','sh603501','sz300782','sz300661'],
     stockNames: ['中芯国际','北方华创','韦尔股份','卓胜微','圣邦股份'],
     keywords: ['国产替代','设备自主化','先进封装','芯片设计','产能扩张'],
-    newsKeywords: ['半导体','芯片','晶圆','光刻','封装','中芯','华创','EDA','GPU','英伟达','台积电','ASML','存储','NAND','DRAM','刻蚀','薄膜','IC设计','国产替代','先进制程','华为','麒麟','昇腾','鸿蒙','海思','华为芯片','国产芯片','麒麟芯片','华为处理器','鲲鹏','巴龙','天罡','射频芯片','模拟芯片','功率半导体','SiC','GaN','碳化硅','氮化镓','RISC-V','SoC']
+    newsKeywords: ['半导体','芯片','晶圆','光刻','封装','中芯','华创','EDA','GPU','英伟达','台积电','ASML','存储','NAND','DRAM','刻蚀','薄膜','IC设计','国产替代','先进制程','华为','麒麟','昇腾','鸿蒙','海思','华为芯片','国产芯片','麒麟芯片','华为处理器','鲲鹏','巴龙','天罡','射频芯片','模拟芯片','功率半导体','SiC','GaN','碳化硅','氮化镓','RISC-V','SoC','韬定律','逻辑折叠','时间缩微','韬','何庭波','麒麟2026','5nm','3nm','2nm','先进封装','CoWoS','HBM','摩尔定律','制程突破']
   },
   {
     id: 'newenergy', name: '新能源', icon: '⚡', tagClass: 'newe',
@@ -37,7 +37,7 @@ const SECTORS = [
     stocks: ['sz300474','sh603019','sz002230','sz300418','sz000977'],
     stockNames: ['景嘉微','中科曙光','科大讯飞','昆仑万维','浪潮信息'],
     keywords: ['智算中心','算力基建','GPU国产化','液冷散热','算电协同'],
-    newsKeywords: ['算力','智算','数据中心','GPU','液冷','服务器','浪潮','曙光','算电协同','IDC','云计算','基础设施','东数西算','算力网络','华为算力','昇腾','华为服务器','国产GPU','景嘉微','国产操作系统','信创','国产化','C86','ARM服务器']
+    newsKeywords: ['算力','智算','数据中心','GPU','液冷','服务器','浪潮','曙光','算电协同','IDC','云计算','基础设施','东数西算','算力网络','华为算力','昇腾','华为服务器','国产GPU','景嘉微','国产操作系统','信创','国产化','C86','ARM服务器','韬定律','超节点','CloudMatrix','逻辑折叠','麒麟']
   },
   {
     id: 'robot', name: '机器人', icon: '🦾', tagClass: 'robo',
@@ -642,6 +642,60 @@ function fetchSinaNews() {
   });
 }
 
+// Fetch news from Tencent News (腾讯新闻) - covers breaking tech news like Huawei
+function fetchTencentNews() {
+  // Multiple categories: tech=24, finance=25, sci=27
+  const CATEGORIES = [24, 25, 27];
+  const fetchCategory = (cat) => {
+    return new Promise((resolve) => {
+      const cbName = 'qq_news_cb_' + cat + '_' + Date.now();
+      const timeout = setTimeout(() => {
+        delete window[cbName];
+        resolve([]);
+      }, 8000);
+
+      window[cbName] = function(data) {
+        clearTimeout(timeout);
+        delete window[cbName];
+        const newsList = [];
+        if (data && data.data && Array.isArray(data.data)) {
+          data.data.forEach(item => {
+            newsList.push({
+              title: item.title || '',
+              content: item.abstract || item.desc || '',
+              source: item.source || '腾讯新闻',
+              time: item.pubtime || item.ptime || '',
+              url: item.url || item.link || '',
+              sectorIds: [],
+              impact: null,
+              impactSummary: '',
+              impactDetails: [],
+              relatedStocks: []
+            });
+          });
+        }
+        resolve(newsList);
+      };
+
+      const script = document.createElement('script');
+      script.src = 'https://news.qq.com/ninja/b/gjnews/entity_data?cat=' + cat + '&num=20&callback=' + cbName + '&_=' + Date.now();
+      script.onerror = () => {
+        clearTimeout(timeout);
+        delete window[cbName];
+        resolve([]);
+      };
+      document.head.appendChild(script);
+      script.onload = () => script.remove();
+    });
+  };
+
+  return Promise.all(CATEGORIES.map(cat => fetchCategory(cat))).then(results => {
+    const allNews = [];
+    results.forEach(list => allNews.push(...list));
+    return allNews;
+  });
+}
+
 // Fallback: generate context-aware sample news based on sector keywords & market data
 function generateFallbackNews() {
   const now = new Date();
@@ -656,6 +710,7 @@ function generateFallbackNews() {
 
   // Semiconductor
   newsTemplates.push(
+    { title: '华为正式发表"韬定律"，以时间缩微替代几何缩微开辟芯片新路径', sector: 'semiconductor', impact: 'positive', summary: '华为韬定律改写半导体演进规则，国产芯片迎重大突破', details: ['华为在IEEE国际电路与系统研讨会上正式发表"韬(τ)定律"，首次提出以"时间缩微"替代"几何缩微"', '华为过去六年基于韬定律已成功设计并量产381款芯片', '今年秋季将发布麒麟2026手机芯片，首次完整采用逻辑折叠技术', '预计到2031年基于韬定律的高端芯片晶体管密度将达到1.4纳米制程同等水平'], stocks: '中芯国际、北方华创、韦尔股份' },
     { title: '国内晶圆厂扩产提速，半导体设备订单持续增长', sector: 'semiconductor', impact: 'positive', summary: '国产替代驱动半导体设备进入高景气周期', details: ['中芯国际、华虹等多家晶圆厂宣布扩产计划', '国产半导体设备中标率持续提升，北方华创等订单饱满', '先进封装产能紧张，CoWoS等扩产迫切'], stocks: '北方华创、中芯国际、圣邦股份' },
     { title: '美国半导体出口管制升级，国产替代紧迫性进一步增强', sector: 'semiconductor', impact: 'positive', summary: '短期扰动但中长期加速国产替代进程', details: ['新规限制AI芯片及半导体设备对华出口', '倒逼国内厂商加速自主研发和供应链国产化', 'EDA、光刻等卡脖子环节获政策重点扶持'], stocks: '中芯国际、北方华创、韦尔股份' }
   );
@@ -1051,6 +1106,22 @@ async function initApp() {
       rawNews = await fetchNews();
     } catch (e) { /* fallback below */ }
 
+    // Also fetch from Tencent News for broader coverage
+    try {
+      const tencentNews = await fetchTencentNews();
+      if (tencentNews.length > 0) {
+        rawNews = rawNews.concat(tencentNews);
+      }
+    } catch (e) { /* ignore */ }
+
+    // Deduplicate by title after merging sources
+    const seenTitles = new Set();
+    rawNews = rawNews.filter(item => {
+      if (!item.title || seenTitles.has(item.title)) return false;
+      seenTitles.add(item.title);
+      return true;
+    });
+
     // If no API news, use fallback
     if (rawNews.length === 0) {
       rawNews = generateFallbackNews();
@@ -1082,7 +1153,7 @@ async function initApp() {
 // Technology keywords for identifying tech news
 const TECH_KEYWORDS = [
   '突破','发布','推出','首发','量产','攻克','研制','研发','创新','迭代',
-  '升级','发布','上市','芯片','大模型','AI','算法','架构','专利','工艺',
+  '升级','上市','芯片','大模型','AI','算法','架构','专利','工艺',
   '技术','制程','纳米','封装','GPU','CPU','NPU','算力','训练','推理',
   '机器人','自动驾驶','固态电池','钙钛矿','超导','量子','核聚变','光刻',
   'EDA','RISC-V','SiC','GaN','先进制程','5nm','3nm','2nm','CoWoS','HBM',
@@ -1092,7 +1163,8 @@ const TECH_KEYWORDS = [
   '人形机器人','减速器','伺服','灵巧手','L3','L4','NOA','FSD',
   '激光雷达','4D毫米波','域控制器','线控','OTA','智能座舱',
   'CAR-T','ADC','GLP-1','PD-1','mRNA','基因编辑','AI制药',
-  '6G','卫星通信','星链','低轨卫星','商业航天','可回收火箭'
+  '6G','卫星通信','星链','低轨卫星','商业航天','可回收火箭',
+  '韬定律','逻辑折叠','时间缩微','超节点','CloudMatrix','自由逻辑'
 ];
 
 // Policy keywords for identifying policy/regulation news
@@ -1120,7 +1192,8 @@ const DAILY_POSITIVE_KW = [
   '量产','出海','升级','翻倍','首次','里程碑','新突破','强劲','重大进展',
   '大幅增长','超预期增长','快速发展','国产替代','自主可控','政策支持',
   '减税','降准','降息','补贴','扶持','鼓励','促进','推动','加快',
-  '开放','放宽','试点','扩围','增量','注入','打通','批复','核准'
+  '开放','放宽','试点','扩围','增量','注入','打通','批复','核准',
+  '韬定律','逻辑折叠','时间缩微','改写','新路径','首创','领先','自研'
 ];
 
 // Negative signal keywords
