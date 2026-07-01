@@ -109,6 +109,7 @@ const state = {
     summary: ''
   },
   dailyFilter: 'all', // daily tab filter
+  newsSource: 'unknown', // 'cailian' | 'eastmoney' | 'fallback'
   lastUpdate: null,
   loading: true,
   error: null
@@ -617,6 +618,111 @@ function fetchNews() {
   });
 }
 
+// ===== 财联社快讯 (电报) 数据源 =====
+
+// 生成财联社API签名（匹配Python urllib urlencode编码）
+function generateCailianSign(params) {
+  // 1. 按键名排序（同Python sorted(params.items())）
+  const keys = Object.keys(params).sort();
+  // 2. 拼接 key=val&... 格式（值做 quote_plus 编码，空格→+）
+  let qs = '';
+  keys.forEach((k, i) => {
+    if (i > 0) qs += '&';
+    // Python urlencode 风格：encodeURIComponent 后把 %20 换成 +
+    const ek = k.replace(/ /g, '+');
+    const ev = encodeURIComponent(params[k]).replace(/%20/g, '+');
+    qs += ek + '=' + ev;
+  });
+  // 3. SHA1(查询串) → hex
+  const sha1Hex = CryptoJS.SHA1(qs).toString(CryptoJS.enc.Hex);
+  // 4. MD5(sha1Hex字符串) → hex
+  const sign = CryptoJS.MD5(sha1Hex).toString(CryptoJS.enc.Hex);
+  return sign;
+}
+
+// 抓取财联社快讯（电报）数据，使用 JSONP 绕过 CORS
+function fetchCailianNews() {
+  return new Promise((resolve) => {
+    // 检查 CryptoJS 是否加载
+    if (typeof CryptoJS === 'undefined') {
+      resolve([]);
+      return;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    // 构造请求参数（不含 sign）
+    const params = {
+      app: 'CailianpressWeb',
+      category: '',
+      lastTime: String(now),
+      last_time: String(now),
+      os: 'web',
+      refresh_type: '1',
+      rn: '100',
+      sv: '7.7.5'
+    };
+
+    // 生成签名
+    const sign = generateCailianSign(params);
+
+    // JSONP 回调名
+    const cbName = 'cailian_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    // 10秒超时
+    const timeout = setTimeout(() => {
+      try { delete window[cbName]; } catch(e) {}
+      resolve([]);
+    }, 10000);
+
+    // JSONP 回调处理
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      try { delete window[cbName]; } catch(e) {}
+      const newsList = [];
+      try {
+        const rollData = data && data.data && data.data.roll_data;
+        if (rollData && Array.isArray(rollData)) {
+          rollData.forEach(item => {
+            if (!item || !item.title) return;
+            const isHot = (item.level === 'A' || item.level === 'B');
+            newsList.push({
+              title: item.title || '',
+              content: item.content || item.brief || '',
+              source: '财联社',
+              time: item.ctime || item.time || Math.floor(Date.now() / 1000),
+              url: item.shareurl || item.url || '',
+              sectorIds: [],
+              impact: null,
+              impactSummary: '',
+              impactDetails: [],
+              relatedStocks: [],
+              isHot: isHot,
+              readingNum: item.reading_num || item.reading_num || 0
+            });
+          });
+        }
+      } catch(e) { /* 解析失败返回空 */ }
+      resolve(newsList);
+    };
+
+    // 构造 JSONP URL（财联社支持 callback 参数）
+    let url = 'https://www.cls.cn/nodeapi/telegraphList?callback=' + encodeURIComponent(cbName);
+    Object.keys(params).forEach(k => {
+      url += '&' + k + '=' + encodeURIComponent(params[k]);
+    });
+    url += '&sign=' + sign;
+
+    const script = document.createElement('script');
+    script.src = url;
+    script.onerror = () => {
+      clearTimeout(timeout);
+      try { delete window[cbName]; } catch(e) {}
+      resolve([]);
+    };
+    document.head.appendChild(script);
+    script.onload = () => { try { script.remove(); } catch(e) {} };
+  });
+}
+
 // Fetch additional sector news from Sina
 function fetchSinaNews() {
   return new Promise((resolve) => {
@@ -1100,21 +1206,34 @@ async function initApp() {
     `;
     renderMarketOverview();
 
-    // Fetch and render news
+    // Fetch and render news — 优先用财联社快讯（电报）
     let rawNews = [];
-    try {
-      rawNews = await fetchNews();
-    } catch (e) { /* fallback below */ }
 
-    // Also fetch from Tencent News for broader coverage
+    // 1. 优先尝试财联社快讯（电报）
     try {
-      const tencentNews = await fetchTencentNews();
-      if (tencentNews.length > 0) {
-        rawNews = rawNews.concat(tencentNews);
+      const cailianNews = await fetchCailianNews();
+      if (cailianNews.length > 0) {
+        rawNews = cailianNews;
+        state.newsSource = 'cailian';
       }
     } catch (e) { /* ignore */ }
 
-    // Deduplicate by title after merging sources
+    // 2. 财联社无数据则用东方财富+腾讯新闻兜底
+    if (rawNews.length === 0) {
+      try {
+        rawNews = await fetchNews();
+        state.newsSource = 'eastmoney';
+      } catch (e) { /* ignore */ }
+      try {
+        const tencentNews = await fetchTencentNews();
+        if (tencentNews.length > 0) {
+          rawNews = rawNews.concat(tencentNews);
+          if (state.newsSource === 'unknown') state.newsSource = 'tencent';
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    // 3. 去重（跨源合并后）
     const seenTitles = new Set();
     rawNews = rawNews.filter(item => {
       if (!item.title || seenTitles.has(item.title)) return false;
@@ -1122,9 +1241,10 @@ async function initApp() {
       return true;
     });
 
-    // If no API news, use fallback
+    // 4. 仍无数据则用本地 fallback
     if (rawNews.length === 0) {
       rawNews = generateFallbackNews();
+      state.newsSource = 'fallback';
     }
 
     state.newsData = processNews(rawNews);
@@ -1132,9 +1252,12 @@ async function initApp() {
     // Process daily report from the same news data
     processDailyReport(rawNews);
 
+    // 数据源标签
+    const srcName = { cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallack: '样本数据' }[state.newsSource] || '';
+
     $('tab-news').innerHTML = `
       <div id="news-filter-bar" class="news-filter-bar"></div>
-      <div class="section-title">📰 行业热点资讯 <span style="font-weight:400;color:var(--text3)">${state.newsData.length}条</span></div>
+      <div class="section-title">📰 行业热点资讯 <span style="font-weight:400;color:var(--text3)">${state.newsData.length}条${srcName ? ' · ' + srcName : ''}</span></div>
       <div id="news-list" class="news-list"></div>
     `;
     renderNewsTab();
@@ -1291,6 +1414,8 @@ function processDailyReport(rawNews) {
 
 // Render Daily Tab
 function renderDailyTab() {
+  // 数据源名称
+  const srcName = { cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallback: '样本数据' }[state.newsSource] || '';
   const filter = state.dailyFilter;
   let items = [];
 
@@ -1325,7 +1450,7 @@ function renderDailyTab() {
 
   let html = `
     <div class="daily-summary ${d.techPositive.length + d.policyPositive.length > d.techNegative.length + d.policyNegative.length ? 'bullish' : d.techNegative.length + d.policyNegative.length > d.techPositive.length + d.policyPositive.length ? 'bearish' : 'neutral'}">
-      <div class="daily-summary-title">📋 今日技术政策速览</div>
+      <div class="daily-summary-title">📋 今日技术政策速览 <span style="font-weight:400;font-size:12px;opacity:0.7">${srcName}</span></div>
       <div class="daily-summary-text">${d.summary}</div>
       <div class="daily-summary-stats">
         <div class="stat-item">
