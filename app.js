@@ -681,14 +681,19 @@ function fetchCailianNews() {
       try {
         const rollData = data && data.data && data.data.roll_data;
         if (rollData && Array.isArray(rollData)) {
+          const NOW_TS = Math.floor(Date.now() / 1000);
+          const FORTY_EIGHT_HOURS = 48 * 3600;
           rollData.forEach(item => {
             if (!item || !item.title) return;
+            // 48小时过滤：跳过超过48小时的新闻
+            const pubTs = Number(item.publish_time || item.ctime || item.time || 0);
+            if (pubTs > 0 && (NOW_TS - pubTs > FORTY_EIGHT_HOURS)) return;
             const isHot = (item.level === 'A' || item.level === 'B');
             newsList.push({
               title: item.title || '',
               content: item.content || item.brief || '',
               source: '财联社',
-              time: item.ctime || item.time || Math.floor(Date.now() / 1000),
+              time: pubTs > 0 ? pubTs : NOW_TS,
               url: item.shareurl || item.url || '',
               sectorIds: [],
               impact: null,
@@ -1358,7 +1363,29 @@ function processDailyReport(rawNews) {
   const techNews = [];
   const policyNews = [];
 
-  rawNews.forEach(item => {
+  // 48小时过滤：只保留最近48小时内的新闻进入日报
+  const NOW_TS = Math.floor(Date.now() / 1000);
+  const FORTY_EIGHT_HOURS = 48 * 3600;
+
+  function parseTimeToTs(timeVal) {
+    if (!timeVal) return 0;
+    if (typeof timeVal === 'number') {
+      // 判断是秒级还是毫秒级时间戳
+      return timeVal > 1e12 ? Math.floor(timeVal / 1000) : timeVal;
+    }
+    // 字符串：替换 - 为 / 以提高iOS Safari兼容性
+    const normalized = String(timeVal).replace(/-/g, '/');
+    const d = new Date(normalized);
+    return isNaN(d.getTime()) ? 0 : Math.floor(d.getTime() / 1000);
+  }
+
+  const recentNews = rawNews.filter(item => {
+    const ts = parseTimeToTs(item.time);
+    if (ts === 0) return true; // 无法解析时间，保留
+    return (NOW_TS - ts) <= FORTY_EIGHT_HOURS;
+  });
+
+  recentNews.forEach(item => {
     const cls = classifyDailyNews(item);
     if (cls.isTech || cls.isPolicy) {
       const dailyItem = {
