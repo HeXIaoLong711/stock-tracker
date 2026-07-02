@@ -1360,6 +1360,20 @@ function classifyDailyNews(newsItem) {
 
 // Process daily report from all news
 function processDailyReport(rawNews) {
+  // Fallback 样本数据不进入日报（日报只显示真实新闻，避免模拟旧闻误导）
+  if (state.newsSource === 'fallback') {
+    state.dailyData = {
+      techNews: [],
+      policyNews: [],
+      techPositive: [],
+      techNegative: [],
+      policyPositive: [],
+      policyNegative: [],
+      summary: '当前为样本数据，日报仅展示真实新闻。请检查网络连接后重试。'
+    };
+    return;
+  }
+
   const techNews = [];
   const policyNews = [];
 
@@ -1445,6 +1459,18 @@ function renderDailyTab() {
   const srcName = { cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallback: '样本数据' }[state.newsSource] || '';
   const filter = state.dailyFilter;
   let items = [];
+
+  // Fallback 样本数据：日报只显示提示，不渲染统计卡片与样本新闻
+  if (state.newsSource === 'fallback') {
+    const d = state.dailyData;
+    $('tab-daily').innerHTML = `
+      <div class="empty-state" style="padding:48px 20px;">
+        <div class="icon">📡</div>
+        <div class="text">${d.summary || '当前为样本数据，日报仅展示真实新闻。请检查网络连接后重试。'}</div>
+      </div>
+    `;
+    return;
+  }
 
   if (filter === 'all') {
     items = [...state.dailyData.techNews, ...state.dailyData.policyNews];
