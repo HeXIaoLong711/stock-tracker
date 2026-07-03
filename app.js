@@ -554,6 +554,44 @@ function closeModal() {
 
 // ===== News Module =====
 
+// 🔧 部署 Cloudflare Worker 后，把下面替换成你的 Worker 地址（需以 /news 结尾）。
+// 见仓库内 worker.js 及下面的部署说明。未替换前返回空，应用会回退到样本数据。
+const RSS_PROXY_URL = 'https://YOUR-SUBDOMAIN.workers.dev/news';
+
+// 从 Cloudflare Worker 代理抓取实时资讯（36氪 + Solidot RSS，服务端聚合，带 CORS）
+async function fetchRssNews() {
+  if (!RSS_PROXY_URL || RSS_PROXY_URL.indexOf('YOUR-SUBDOMAIN') !== -1) {
+    return [];
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const resp = await fetch(RSS_PROXY_URL, { signal: ctrl.signal, cache: 'no-store' });
+    if (!resp.ok) throw new Error('bad status ' + resp.status);
+    const json = await resp.json();
+    const items = (json && json.items) || [];
+    if (!items.length) return [];
+    return items.map(it => ({
+      title: it.title || '',
+      content: it.content || '',
+      source: it.source || 'RSS',
+      time: it.time ? Number(it.time) : Math.floor(Date.now() / 1000),
+      url: it.link || '',
+      sectorIds: [],
+      impact: null,
+      impactSummary: '',
+      impactDetails: [],
+      relatedStocks: [],
+      isHot: false,
+      readingNum: 0
+    }));
+  } catch (e) {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Fetch news from East Money (supports JSONP) - multiple columns for broader coverage
 function fetchNews() {
   // Multiple news columns: 250=要闻, 352=科技, 354=7x24, 462=半导体, 463=新能源, 464=医药, 465=消费, 466=金融, 467=军工
@@ -650,14 +688,12 @@ function fetchCailianNews() {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    // 构造请求参数（不含 sign）
+    // 构造请求参数（不含 sign）—— 仅保留参与签名的字段
+    // 财联社签名串固定为: app&last_time&os&rn&sv（按 key 排序）
     const params = {
       app: 'CailianpressWeb',
-      category: '',
-      lastTime: String(now),
       last_time: String(now),
       os: 'web',
-      refresh_type: '1',
       rn: '100',
       sv: '7.7.5'
     };
@@ -1211,42 +1247,19 @@ async function initApp() {
     `;
     renderMarketOverview();
 
-    // Fetch and render news — 优先用财联社快讯（电报）
+    // Fetch and render news — 优先用 Cloudflare Worker 代理的 RSS 实时资讯
     let rawNews = [];
 
-    // 1. 优先尝试财联社快讯（电报）
+    // 1. 优先尝试 Worker 代理（36氪 + Solidot），拿到真实实时新闻
     try {
-      const cailianNews = await fetchCailianNews();
-      if (cailianNews.length > 0) {
-        rawNews = cailianNews;
-        state.newsSource = 'cailian';
+      const rssNews = await fetchRssNews();
+      if (rssNews.length > 0) {
+        rawNews = rssNews;
+        state.newsSource = 'rss';
       }
     } catch (e) { /* ignore */ }
 
-    // 2. 财联社无数据则用东方财富+腾讯新闻兜底
-    if (rawNews.length === 0) {
-      try {
-        rawNews = await fetchNews();
-        state.newsSource = 'eastmoney';
-      } catch (e) { /* ignore */ }
-      try {
-        const tencentNews = await fetchTencentNews();
-        if (tencentNews.length > 0) {
-          rawNews = rawNews.concat(tencentNews);
-          if (state.newsSource === 'unknown') state.newsSource = 'tencent';
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    // 3. 去重（跨源合并后）
-    const seenTitles = new Set();
-    rawNews = rawNews.filter(item => {
-      if (!item.title || seenTitles.has(item.title)) return false;
-      seenTitles.add(item.title);
-      return true;
-    });
-
-    // 4. 仍无数据则用本地 fallback
+    // 2. 仍无数据则用本地 fallback（样本数据，仅用于离线演示）
     if (rawNews.length === 0) {
       rawNews = generateFallbackNews();
       state.newsSource = 'fallback';
@@ -1258,7 +1271,7 @@ async function initApp() {
     processDailyReport(rawNews);
 
     // 数据源标签
-    const srcName = { cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallack: '样本数据' }[state.newsSource] || '';
+    const srcName = { rss: 'RSS实时资讯', cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallback: '样本数据' }[state.newsSource] || '';
 
     $('tab-news').innerHTML = `
       <div id="news-filter-bar" class="news-filter-bar"></div>
@@ -1456,7 +1469,7 @@ function processDailyReport(rawNews) {
 // Render Daily Tab
 function renderDailyTab() {
   // 数据源名称
-  const srcName = { cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallback: '样本数据' }[state.newsSource] || '';
+  const srcName = { rss: 'RSS实时资讯', cailian: '财联社', eastmoney: '东方财富', tencent: '腾讯新闻', fallback: '样本数据' }[state.newsSource] || '';
   const filter = state.dailyFilter;
   let items = [];
 
