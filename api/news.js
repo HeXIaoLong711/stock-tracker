@@ -44,8 +44,14 @@ function parseRSS(xml, sourceName) {
     if (!title) continue;
     const link = clean((b.match(/<link>([\s\S]*?)<\/link>/) || [])[1] || '');
     const pub = clean((b.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1] || '');
-    const desc = stripHtml((b.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || '');
-    out.push({ title, link, time: toTs(pub), source: sourceName, content: desc.slice(0, 200) });
+    // 关键：必须先用 clean() 去掉 <![CDATA[ ... ]]> 包裹，否则 stripHtml 的 <[^>]+>
+    // 会从首个 '<' 一直吃到 CDATA 结尾的 '>'，把整段正文一起吞掉（快讯条目尤甚）。
+    const descRaw = (b.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || '';
+    let desc = stripHtml(clean(descRaw));
+    // 去掉 "作者 | XXX 编辑 | XXX " 这类中文署名前缀（如 "作者 | 张子怡 编辑 | 袁斯来 硬氪获悉…"）
+    desc = desc.replace(/^作者\s*[|｜]\s*[^\s，。、]+?\s+编辑\s*[|｜]\s*[^\s，。、]+?\s+/, '');
+    if (!desc) desc = title; // 极端情况：description 仍为空则用标题兜底
+    out.push({ title, link, time: toTs(pub), source: sourceName, content: desc.slice(0, 300) });
   }
   return out;
 }
