@@ -1,0 +1,5 @@
+name = "wandering-bonus-913d"
+main = "worker.js"
+compatibility_date = "2026-07-03"
+
+# 该 Worker 纯做 RSS 代理转发，无需绑定任何资源
