@@ -554,9 +554,10 @@ function closeModal() {
 
 // ===== News Module =====
 
-// 🔧 部署 Cloudflare Worker 后，把下面替换成你的 Worker 地址（需以 /news 结尾）。
-// 见仓库内 worker.js 及下面的部署说明。未替换前返回空，应用会回退到样本数据。
-const RSS_PROXY_URL = 'https://YOUR-SUBDOMAIN.workers.dev/news';
+// 🔧 实时资讯经由 Vercel Serverless 代理（api/news.js）抓取 36氪 + Solidot RSS。
+// 部署后把下面替换成你的 Vercel 地址（需以 /api/news 结尾）。
+// 见仓库内 api/news.js 与 vercel.json。未替换前返回空，应用会回退到样本数据。
+const RSS_PROXY_URL = 'https://stock-tracker-flame-eight.vercel.app/api/news';
 
 // 从 Cloudflare Worker 代理抓取实时资讯（36氪 + Solidot RSS，服务端聚合，带 CORS）
 async function fetchRssNews() {
